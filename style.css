@@ -1,7 +1,13 @@
+@font-face {
+    font-family: 'PixelFont';
+    src: url('./Assets/slkscr.ttf');
+}
+
 body{
     margin: 0;
     text-align: center;
     font-family: 'Courier New', Courier, monospace;
+    overflow: hidden;
 }
 
 #board{

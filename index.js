@@ -1,10 +1,10 @@
 let tileSize=32;
-let rows=18;
-let columns=24;
+let rows = Math.floor(window.innerHeight / tileSize);
+let columns = Math.floor(window.innerWidth / tileSize);
 
 let board;
-let boardWidth= tileSize*columns;
-let boardHeight= tileSize*rows;
+let boardWidth= window.innerWidth;
+let boardHeight= window.innerHeight;
 let context;
 
 let shipWdith= tileSize*2;
@@ -27,8 +27,15 @@ let alienWith=tileSize*2;
 let alienHeight=tileSize;
 let alienX=tileSize;
 let alienY=tileSize;
-let alienImg= new Image();
-alienImg.src="./Assets/alien-white.png";
+
+let alienImgMagenta = new Image();
+alienImgMagenta.src = "./Assets/alien-magenta.png";
+let alienImgCyan = new Image();
+alienImgCyan.src = "./Assets/alien-cyan.png";
+let alienImgYellow = new Image();
+alienImgYellow.src = "./Assets/alien-yellow.png";
+let alienImgWhite = new Image();
+alienImgWhite.src = "./Assets/alien-white.png";
 
 let alienRows=2;
 let alienColumns=3;
@@ -40,11 +47,12 @@ let bulletVel=-10;
 
 let score=0;
 let gameOver=false;
+let level=1;
 
 window.onload=function(){
     board=document.getElementById("board");
-    board.width=boardWidth;
-    board.height=boardHeight;
+    board.width= boardWidth;
+    board.height= boardHeight;
     context=board.getContext("2d")
 
     context.fillRect(ship.x,ship.y,ship.width,ship.height);
@@ -58,6 +66,14 @@ window.onload=function(){
     document.addEventListener("keydown", moveShip);
     document.addEventListener("keydown", shoot);
 }
+
+window.addEventListener("resize", function() {
+    board.width = window.innerWidth;
+    board.height = window.innerHeight;
+    rows = Math.floor(board.height / tileSize);
+    columns = Math.floor(board.width / tileSize);
+    statistics();
+});
 
 function update(){
     requestAnimationFrame(update);
@@ -99,12 +115,23 @@ function update(){
 
         for(let k=0;k<alienArr.length;k++){
             let alien=alienArr[k];
-            if(!bullet.used && alien.alive && detectCollision(bullet, alien)){
-                bullet.used=true;
-                alien.alive=false;
-                alienCount--;
-                score+=100;
+            if (!bullet.used && alien.alive && detectCollision(bullet, alien)) {
+                bullet.used = true;
+                alien.hp--;
+                score+=20;
+                if (alien.hp == 3) {
+                    alien.img = alienImgCyan;
+                } else if (alien.hp == 2) {
+                    alien.img = alienImgYellow;
+                } else if (alien.hp == 1) {
+                    alien.img = alienImgWhite;
+                } else if (alien.hp == 0) {
+                    alien.alive = false;
+                    alienCount--;
+                    score += 100;
+                }
             }
+            
         }
     }
 
@@ -120,13 +147,12 @@ function update(){
         alienVel+=0.2;
         alienArr=[];
         bulletArr=[];
+        score+=500;
+        level++;
         createAliens();
     }
 
-    //score
-    context.fillStyle="white";
-    context.font="16px courier";
-    context.fillText("Score: "+score,5,20);
+    statistics();
 }
 
 function moveShip(e){
@@ -146,12 +172,13 @@ function createAliens(){
     for(let c=0;c<alienColumns;c++){
         for(let r=0; r<alienRows;r++){
             let alien={
-                img:alienImg,
+                img:alienImgMagenta,
                 x:alienX+ c*alienWith,
                 y: alienY + r*alienHeight,
                 width: alienWith,
                 height: alienHeight,
-                alive:true
+                alive:true,
+                hp:4
             }
             alienArr.push(alien);
         }
@@ -181,4 +208,22 @@ function detectCollision(a,b){
             a.x + a.width > b.x &&
             a.y < b.y + b.height &&
             a.y + a.height > b.y;
+}
+
+function statistics(){
+    //score
+    context.fillStyle="white";
+    context.font="28px PixelFont";
+    context.fillText("Score ",10,30);
+
+    context.fillStyle="#33ff00";
+    context.fillText(score,125, 30);
+
+    //level
+    context.fillStyle="white";
+    context.font="28px PixelFont";
+    context.fillText("Level ",boardWidth-140,30);
+
+    context.fillStyle="#33ff00";
+    context.fillText(level,boardWidth-40, 30);
 }
