@@ -70,21 +70,35 @@ let showingPrompt = false;
 
 let score=0;
 let gameOver=false;
+let gameStarted = false;
+let firstFrameRendered = false;
+let paused=false;
 let level=1;
 let shootingSpeed = 500; // milliseconds
 let shootingInterval = setInterval(autoShoot, shootingSpeed);
 
-let instructions=["Press arrow keys or A/D keys to move", "Press space bar to shoot", "Kill enemies and dont die"]
+let instructions=["Press Space to start","Press arrow keys or A/D keys to move", "Press space bar to shoot", "Kill enemies and dont die"]
 let instructionIndex = 1;
 prompt(instructions[0], 1, 0.004);
-let instructionInterval = setInterval(() => {
-    prompt(instructions[instructionIndex], 1, 0.004);
-    instructionIndex++;
-    if (instructionIndex >= instructions.length) {
-        clearInterval(instructionInterval);
-    }
-}, 3000);
 
+document.addEventListener("keydown", function(e) {
+    if (!gameStarted && e.code === "Space") {
+        gameStarted=true;
+        let instructionInterval = setInterval(() => {
+            prompt(instructions[instructionIndex], 1, 0.004);
+            instructionIndex++;
+            if (instructionIndex >= instructions.length) {
+                clearInterval(instructionInterval);
+            }
+        }, 2000);
+    }
+    if (gameOver && e.code === "Space") {
+        restartGame();
+    }
+    if (e.code === "KeyP") {
+        paused = !paused;
+    }
+});
 
 window.onload=function(){
     board=document.getElementById("board");
@@ -114,76 +128,81 @@ window.addEventListener("resize", function() {
 
 function update(){
     requestAnimationFrame(update);
-    if(gameOver){
-        context.fillStyle="red";
-        context.font="40px PixelFont";
-        context.fillText("Game Over", boardWidth/2-100,boardHeight/2);
-        return;
-    }
-    context.clearRect(0,0,board.width,board.height);
-
-    let currentTime = Date.now();
-    for (let i = 0; i < effects.length; i++) {
-        let effect = effects[i];
-        if (currentTime - effect.startTime > 1500) {
-            context.clearRect(effect.x, effect.y, effect.width, effect.height);
-            effects.splice(i, 1);
-            i--;
+    
+    if (!firstFrameRendered || (gameStarted && !paused)) {
+        firstFrameRendered = true;
+    
+        if(gameOver){
+            context.fillStyle="red";
+            context.font="40px PixelFont";
+            context.fillText("Game Over", boardWidth/2-100,boardHeight/2);
+            return;
         }
-    }
+        context.clearRect(0,0,board.width,board.height);
 
-    //ship
-    context.drawImage(shipImg, ship.x,ship.y,ship.width,ship.height);
+        let currentTime = Date.now();
+        for (let i = 0; i < effects.length; i++) {
+            let effect = effects[i];
+            if (currentTime - effect.startTime > 1500) {
+                context.clearRect(effect.x, effect.y, effect.width, effect.height);
+                effects.splice(i, 1);
+                i--;
+            }
+        }
 
-    //aliens
-    for(let i=0;i<alienArr.length;i++){
-        let alien= alienArr[i];
-        if(alien.alive){
-            alien.x += alienVel;
-            if(alien.x+alien.width >= board.width || alien.x<=0){
-                alienVel*=-1;
-                alien.x+=alienVel*2;
+        //ship
+        context.drawImage(shipImg, ship.x,ship.y,ship.width,ship.height);
 
-                for(let k=0;k<alienArr.length;k++){
-                    alienArr[k].y+=alienHeight;
+        //aliens
+        for(let i=0;i<alienArr.length;i++){
+            let alien= alienArr[i];
+            if(alien.alive){
+                alien.x += alienVel;
+                if(alien.x+alien.width >= board.width || alien.x<=0){
+                    alienVel*=-1;
+                    alien.x+=alienVel*2;
+
+                    for(let k=0;k<alienArr.length;k++){
+                        alienArr[k].y+=alienHeight;
+                    }
+                }
+                context.drawImage(alien.img,alien.x,alien.y,alien.width,alien.height);
+
+                if(alien.y>=ship.y){
+                    gameOver=true;
                 }
             }
-            context.drawImage(alien.img,alien.x,alien.y,alien.width,alien.height);
+        }
 
-            if(alien.y>=ship.y){
-                gameOver=true;
+        //bullets
+        shooting();
+
+        //clear bullets
+        while(bulletArr.length>0 && (bulletArr[0].used || bulletArr[0].y < 0)){
+            bulletArr.shift();
+        }
+
+        //draw prompt
+        if (showingPrompt) {
+            context.fillStyle = `rgba(${promptColor}, ${promptOpacity})`;
+            context.font = "34px PixelFont";
+            let textWidth = context.measureText(promptText).width;
+            context.fillText(promptText,(board.width-textWidth)/2, promptY);
+
+            // Move the prompt up and reduce its opacity
+            promptY -= promptVel;
+            promptOpacity -= promptTime;
+
+            // Hide the prompt when its opacity reaches 0
+            if (promptOpacity <= 0) {
+                showingPrompt = false;
             }
         }
+
+        nextLevel();
+
+        statistics();
     }
-
-    //bullets
-    shooting();
-
-    //clear bullets
-    while(bulletArr.length>0 && (bulletArr[0].used || bulletArr[0].y < 0)){
-        bulletArr.shift();
-    }
-
-    //draw prompt
-    if (showingPrompt) {
-        context.fillStyle = `rgba(${promptColor}, ${promptOpacity})`;
-        context.font = "34px PixelFont";
-        let textWidth = context.measureText(promptText).width;
-        context.fillText(promptText,(board.width-textWidth)/2, promptY);
-
-        // Move the prompt up and reduce its opacity
-        promptY -= promptVel;
-        promptOpacity -= promptTime;
-
-        // Hide the prompt when its opacity reaches 0
-        if (promptOpacity <= 0) {
-            showingPrompt = false;
-        }
-    }
-
-    nextLevel();
-
-    statistics();
 }
 
 function nextLevel(){
@@ -311,6 +330,7 @@ function shooting(){
             showEffect(life_lost, ship.x-ship.height, ship.y-10, ship.width*2, ship.height*2);
             showEffect(life_lost, board.width - 145 + (ship.lives - 1) * (ship.width / 2+10), 15, ship.width/1.5, ship.height/1.5);
             ship.lives--;
+            prompt("-1 Life",2,0.008,"255,155,155");
             alienBulletArr.splice(i, 1);
             i--;
             if(ship.lives==0){
@@ -408,4 +428,26 @@ function statistics(){
 function showEffect(effectImg, x, y, width, height) {
     context.drawImage(effectImg, x, y, width, height);
     effects.push({x: x, y: y, width: width, height: height, startTime: Date.now()});
+}
+
+function restartGame() {
+    // Reset game variables
+    ship.lives = 3;
+    score = 0;
+    level = 1;
+    alienColumns = 3;
+    alienRows = 2;
+    alienVel = 1;
+    alienArr = [];
+    bulletArr = [];
+    alienBulletArr = [];
+    shootingSpeed = 500;
+    clearInterval(shootingInterval);
+    shootingInterval = setInterval(autoShoot, shootingSpeed);
+    
+    // Create aliens
+    createAliens();
+    
+    // Reset game over flag
+    gameOver = false;
 }
