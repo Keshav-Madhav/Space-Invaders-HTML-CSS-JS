@@ -45,6 +45,11 @@ alienDamageEffect.src ="./Assets/alien_life_lost.png"
 let alien_bullet=new Image();
 alien_bullet.src="./Assets/alien_bullet.png";
 
+let life_lost=new Image();
+life_lost.src="./Assets/life_lost.png"
+
+let effects = [];
+
 let alienRows=2;
 let alienColumns=3;
 let alienCount=3;
@@ -57,7 +62,10 @@ let alienShootSpeed=1000;
 
 let promptText="";
 let promptY = boardHeight / 1.5;
+let promptVel=2;
+let promptTime=0.008;
 let promptOpacity = 1;
+let promptColor="255,255,255"
 let showingPrompt = false;
 
 let score=0;
@@ -65,6 +73,18 @@ let gameOver=false;
 let level=1;
 let shootingSpeed = 500; // milliseconds
 let shootingInterval = setInterval(autoShoot, shootingSpeed);
+
+let instructions=["Press arrow keys or A/D keys to move", "Press space bar to shoot", "Kill enemies and dont die"]
+let instructionIndex = 1;
+prompt(instructions[0], 1, 0.004);
+let instructionInterval = setInterval(() => {
+    prompt(instructions[instructionIndex], 1, 0.004);
+    instructionIndex++;
+    if (instructionIndex >= instructions.length) {
+        clearInterval(instructionInterval);
+    }
+}, 3000);
+
 
 window.onload=function(){
     board=document.getElementById("board");
@@ -102,6 +122,16 @@ function update(){
     }
     context.clearRect(0,0,board.width,board.height);
 
+    let currentTime = Date.now();
+    for (let i = 0; i < effects.length; i++) {
+        let effect = effects[i];
+        if (currentTime - effect.startTime > 1500) {
+            context.clearRect(effect.x, effect.y, effect.width, effect.height);
+            effects.splice(i, 1);
+            i--;
+        }
+    }
+
     //ship
     context.drawImage(shipImg, ship.x,ship.y,ship.width,ship.height);
 
@@ -136,14 +166,14 @@ function update(){
 
     //draw prompt
     if (showingPrompt) {
-        context.fillStyle = `rgba(155, 155, 255, ${promptOpacity})`;
+        context.fillStyle = `rgba(${promptColor}, ${promptOpacity})`;
         context.font = "34px PixelFont";
         let textWidth = context.measureText(promptText).width;
         context.fillText(promptText,(board.width-textWidth)/2, promptY);
 
         // Move the prompt up and reduce its opacity
-        promptY -= 2;
-        promptOpacity -= 0.008;
+        promptY -= promptVel;
+        promptOpacity -= promptTime;
 
         // Hide the prompt when its opacity reaches 0
         if (promptOpacity <= 0) {
@@ -176,19 +206,22 @@ function nextLevel(){
         }
         if((level-1)%3==0 && ship.lives<4){
             ship.lives++;
-            prompt("+1 life")
+            prompt("+1 life",1.5 ,0.01 ,"155,255,155")
         }
         createAliens();
     }
 }
 
-function prompt(text) {
+function prompt(text, vel=2, time=0.01, color="135, 206, 235") {
     // Only show the prompt if it is not currently being shown
     if (!showingPrompt) {
         showingPrompt = true;
         promptText = text;
         promptY = boardHeight / 1.5;
         promptOpacity = 1;
+        promptVel=vel;
+        promptTime=time;
+        promptColor=color;
     }
 }
 
@@ -275,6 +308,8 @@ function shooting(){
 
         // Detect collision with player's ship
         if (detectCollision(bullet, ship)) {
+            showEffect(life_lost, ship.x-ship.height, ship.y-10, ship.width*2, ship.height*2);
+            showEffect(life_lost, board.width - 145 + (ship.lives - 1) * (ship.width / 2+10), 15, ship.width/1.5, ship.height/1.5);
             ship.lives--;
             alienBulletArr.splice(i, 1);
             i--;
@@ -372,7 +407,5 @@ function statistics(){
 
 function showEffect(effectImg, x, y, width, height) {
     context.drawImage(effectImg, x, y, width, height);
-    setTimeout(() => {
-        context.clearRect(x, y, width, height);
-    }, 100);
+    effects.push({x: x, y: y, width: width, height: height, startTime: Date.now()});
 }
