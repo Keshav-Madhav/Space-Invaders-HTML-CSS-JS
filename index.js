@@ -71,34 +71,44 @@ let showingPrompt = false;
 let score=0;
 let gameOver=false;
 let gameStarted = false;
+let gameOverTime = null;
 let firstFrameRendered = false;
 let paused=false;
 let level=1;
 let shootingSpeed = 500; // milliseconds
 let shootingInterval = setInterval(autoShoot, shootingSpeed);
 
-let instructions=["Press Space to start","Press arrow keys or A/D keys to move", "Press space bar to shoot", "Kill enemies and dont die"]
+let instructionsArr=["Press Space to start","Press arrow keys or A/D keys to move", "Press space bar to shoot","P-Pause  R-Restart", "Kill enemies and dont die"]
 let instructionIndex = 1;
-prompt(instructions[0], 1, 0.004);
+prompt(instructionsArr[0], 1, 0.004);
 
 document.addEventListener("keydown", function(e) {
-    if (!gameStarted && e.code === "Space") {
+    if (!gameStarted && e.code === "Space"){
         gameStarted=true;
-        let instructionInterval = setInterval(() => {
-            prompt(instructions[instructionIndex], 1, 0.004);
-            instructionIndex++;
-            if (instructionIndex >= instructions.length) {
-                clearInterval(instructionInterval);
-            }
-        }, 2000);
+        instructions();
     }
-    if (gameOver && e.code === "Space") {
+    if (e.code === "KeyR"){
         restartGame();
     }
-    if (e.code === "KeyP") {
+    if (e.code === "KeyP"){
         paused = !paused;
     }
+    if (e.code === "KeyI"){
+        instructions();
+    }
 });
+
+function instructions(){
+    let instructionInterval = setInterval(() => {
+        prompt(instructionsArr[instructionIndex], 1, 0.004);
+        instructionIndex++;
+        if (instructionIndex >= instructionsArr.length) {
+            clearInterval(instructionInterval);
+        }
+    }, 2000);
+    instructionIndex=1;
+}
+
 
 window.onload=function(){
     board=document.getElementById("board");
@@ -128,16 +138,24 @@ window.addEventListener("resize", function() {
 
 function update(){
     requestAnimationFrame(update);
+    if (gameOver) {
+        if (!gameOverTime) {
+            gameOverTime = Date.now();
+        }
+        
+        if (Date.now() - gameOverTime > 200) {
+            context.fillStyle = "red";
+            context.font = "40px PixelFont";
+            context.fillText("Game Over", boardWidth / 2 - 100, boardHeight / 2);
+            return;
+        }
+    } else {
+        gameOverTime = null;
+    }
     
     if (!firstFrameRendered || (gameStarted && !paused)) {
         firstFrameRendered = true;
-    
-        if(gameOver){
-            context.fillStyle="red";
-            context.font="40px PixelFont";
-            context.fillText("Game Over", boardWidth/2-100,boardHeight/2);
-            return;
-        }
+
         context.clearRect(0,0,board.width,board.height);
 
         let currentTime = Date.now();
