@@ -43,6 +43,7 @@ let alienCount=3;
 let alienVel=1;
 
 let bulletArr=[];
+let alienBulletArr=[];
 let bulletVel=-10;
 
 let score=0;
@@ -119,19 +120,26 @@ function update(){
                 bullet.used = true;
                 alien.hp--;
                 score+=20;
-                if (alien.hp == 3) {
-                    alien.img = alienImgCyan;
-                } else if (alien.hp == 2) {
-                    alien.img = alienImgYellow;
-                } else if (alien.hp == 1) {
-                    alien.img = alienImgWhite;
-                } else if (alien.hp == 0) {
+                alien.img=getAlienImage(alien.hp);
+                if(alien.hp==0){
                     alien.alive = false;
                     alienCount--;
                     score += 100;
                 }
             }
             
+        }
+    }
+
+    for (let i = 0; i < alienBulletArr.length; i++) {
+        let bullet = alienBulletArr[i];
+        bullet.y -= bulletVel/2;
+        context.fillStyle = "red";
+        context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+
+        // Detect collision with player's ship
+        if (detectCollision(bullet, ship)) {
+            gameOver=true;
         }
     }
 
@@ -171,19 +179,32 @@ function moveShip(e){
 function createAliens(){
     for(let c=0;c<alienColumns;c++){
         for(let r=0; r<alienRows;r++){
+            let health= Math.floor(Math.random() * 4) + 1;
             let alien={
-                img:alienImgMagenta,
+                img: getAlienImage(health),
                 x:alienX+ c*alienWith,
                 y: alienY + r*alienHeight,
                 width: alienWith,
                 height: alienHeight,
                 alive:true,
-                hp:4
+                hp: health
             }
             alienArr.push(alien);
         }
     }
     alienCount=alienArr.length;
+}
+
+function getAlienImage(hp) {
+    if (hp == 3) {
+        return alienImgCyan;
+    } else if (hp == 2) {
+        return alienImgYellow;
+    } else if (hp == 1) {
+        return alienImgWhite;
+    } else {
+        return alienImgMagenta;
+    }
 }
 
 function shoot(e){
@@ -202,6 +223,24 @@ function shoot(e){
         bulletArr.push(bullet);
     }
 }
+
+function shootAlienBullet() {
+    // Choose a random alien to shoot from
+    let shootingAliens = alienArr.filter(alien => alien.alive);
+    if (shootingAliens.length === 0) return;
+    let shootingAlien = shootingAliens[Math.floor(Math.random() * shootingAliens.length)];
+
+    let bullet = {
+        x: shootingAlien.x + shootingAlien.width / 2,
+        y: shootingAlien.y + shootingAlien.height,
+        width: tileSize / 6,
+        height: tileSize / 2,
+        used: false
+    };
+    alienBulletArr.push(bullet);
+}
+setInterval(shootAlienBullet, Math.random() * 1000 + 1000);
+
 
 function detectCollision(a,b){
     return  a.x < b.x + b.width &&
@@ -222,8 +261,8 @@ function statistics(){
     //level
     context.fillStyle="white";
     context.font="28px PixelFont";
-    context.fillText("Level ",boardWidth-140,30);
+    context.fillText("Level ",board.width-140,30);
 
     context.fillStyle="#33ff00";
-    context.fillText(level,boardWidth-40, 30);
+    context.fillText(level,board.width-40, 30);
 }
