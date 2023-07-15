@@ -24,9 +24,9 @@ let shipImg= new Image();
 shipImg.src= "./Assets/ship.png";
 
 let alienArr=[];
-let alienWith=tileSize*2;
+let alienWidth=tileSize*2;
 let alienHeight=tileSize;
-let alienX=tileSize;
+let alienX=boardWidth/2-alienWidth*3/2;
 let alienY=tileSize*2;
 
 let alienImgMagenta = new Image();
@@ -47,6 +47,12 @@ alien_bullet.src="./Assets/alien_bullet.png";
 
 let life_lost=new Image();
 life_lost.src="./Assets/life_lost.png"
+
+let font = new FontFace('PixelFont', 'url(./Assets/slkscr.ttf)');
+
+font.load().then(function(loadedFont) {
+    document.fonts.add(loadedFont);
+});
 
 let effects = [];
 
@@ -233,7 +239,7 @@ function nextLevel(){
         score+=2000;
         level++;
         if (level-1 == 4) {
-            prompt("Auto Fire Unlocked");
+            prompt("Auto Fire Unlocked", 1,0.006);
         }
         if(level>4){
             alienShootSpeed=Math.min(alienShootSpeed-150,200);
@@ -241,9 +247,13 @@ function nextLevel(){
             clearInterval(shootingInterval);
             shootingInterval = setInterval(autoShoot, shootingSpeed);
         }
-        if((level-1)%3==0 && ship.lives<4){
+        if((level-1)%3==0 && ship.lives<3){
             ship.lives++;
             prompt("+1 life",1.5 ,0.01 ,"155,255,155")
+        }
+        if(level-1==5){
+            prompt("Double Gun Unlocked", 1, 0.006, "255,255,0")
+            shootingSpeed=shootingSpeed/2;
         }
         createAliens();
     }
@@ -282,9 +292,9 @@ function createAliens(){
             let health = Math.floor(Math.random() * maxHp) + 1;
             let alien={
                 img: getAlienImage(health),
-                x: alienX+ c*alienWith,
+                x: alienX+ c*alienWidth,
                 y: alienY + r*(alienHeight+4),
-                width: alienWith,
+                width: alienWidth,
                 height: alienHeight,
                 alive:true,
                 hp: health
@@ -358,38 +368,82 @@ function shooting(){
     }
 }
 
-function shoot(e){
-    if(gameOver){
+function shoot(e) {
+    if (gameOver) {
         return;
     }
 
-    if(e.code == "Space"){
-        let bullet={
-            x:ship.x +shipWdith*15/32,
-            y: ship.y,
-            width: tileSize/8,
-            height: tileSize/2,
-            used: false
+    if (e.code == "Space") {
+        if (level >= 6) {
+            // Add two bullets
+            let bullet1 = {
+                x: ship.x+15,
+                y: ship.y+5,
+                width: tileSize / 8,
+                height: tileSize / 2,
+                used: false
+            };
+            let bullet2 = {
+                x: ship.x + ship.width-15,
+                y: ship.y+5,
+                width: tileSize / 8,
+                height: tileSize / 2,
+                used: false
+            };
+            bulletArr.push(bullet1);
+            bulletArr.push(bullet2);
+        } else {
+            // Add one bullet
+            let bullet = {
+                x: ship.x + shipWdith * 15 / 32,
+                y: ship.y,
+                width: tileSize / 8,
+                height: tileSize / 2,
+                used: false
+            };
+            bulletArr.push(bullet);
         }
-        bulletArr.push(bullet);
     }
 }
+
 
 function autoShoot() {
     // Only shoot if the game is not over and the level is greater than 4
     if (!gameOver && level > 4) {
-        let bullet = {
-            x: ship.x + shipWdith * 15 / 32,
-            y: ship.y,
-            width: tileSize / 8,
-            height: tileSize / 2,
-            used: false
-        };
-        bulletArr.push(bullet);
+        if (level >= 6) {
+            // Add two bullets
+            let bullet1 = {
+                x: ship.x+15,
+                y: ship.y+5,
+                width: tileSize / 8,
+                height: tileSize / 2,
+                used: false
+            };
+            let bullet2 = {
+                x: ship.x + ship.width-15,
+                y: ship.y+5,
+                width: tileSize / 8,
+                height: tileSize / 2,
+                used: false
+            };
+            bulletArr.push(bullet1);
+            bulletArr.push(bullet2);
+        } else {
+            // Add one bullet
+            let bullet = {
+                x: ship.x + shipWdith * 15 / 32,
+                y: ship.y,
+                width: tileSize / 8,
+                height: tileSize / 2,
+                used: false
+            };
+            bulletArr.push(bullet);
+        }
     }
 }
 
 function shootAlienBullet() {
+    if (paused) return;
     // Choose a random alien to shoot from
     let shootingAliens = alienArr.filter(alien => alien.alive);
     if (shootingAliens.length === 0) return;
