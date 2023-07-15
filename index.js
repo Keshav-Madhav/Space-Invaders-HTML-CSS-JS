@@ -16,7 +16,8 @@ let ship={
     x:shipX,
     y:shipY,
     width: shipWdith,
-    height:shipHeight
+    height:shipHeight,
+    lives:3
 }
 let shipVel=tileSize;
 let shipImg= new Image();
@@ -26,7 +27,7 @@ let alienArr=[];
 let alienWith=tileSize*2;
 let alienHeight=tileSize;
 let alienX=tileSize;
-let alienY=tileSize;
+let alienY=tileSize*2;
 
 let alienImgMagenta = new Image();
 alienImgMagenta.src = "./Assets/alien-magenta.png";
@@ -79,6 +80,9 @@ window.addEventListener("resize", function() {
 function update(){
     requestAnimationFrame(update);
     if(gameOver){
+        context.fillStyle="red";
+        context.font="40px PixelFont";
+        context.fillText("Game Over", boardWidth/2-100,boardHeight/2);
         return;
     }
     context.clearRect(0,0,board.width,board.height);
@@ -108,47 +112,19 @@ function update(){
     }
 
     //bullets
-    for(let i=0;i<bulletArr.length; i++){
-        let bullet=bulletArr[i];
-        bullet.y+=bulletVel;
-        context.fillStyle="white";
-        context.fillRect(bullet.x,bullet.y,bullet.width,bullet.height);
-
-        for(let k=0;k<alienArr.length;k++){
-            let alien=alienArr[k];
-            if (!bullet.used && alien.alive && detectCollision(bullet, alien)) {
-                bullet.used = true;
-                alien.hp--;
-                score+=20;
-                alien.img=getAlienImage(alien.hp);
-                if(alien.hp==0){
-                    alien.alive = false;
-                    alienCount--;
-                    score += 100;
-                }
-            }
-            
-        }
-    }
-
-    for (let i = 0; i < alienBulletArr.length; i++) {
-        let bullet = alienBulletArr[i];
-        bullet.y -= bulletVel/2;
-        context.fillStyle = "red";
-        context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-
-        // Detect collision with player's ship
-        if (detectCollision(bullet, ship)) {
-            gameOver=true;
-        }
-    }
+    shooting();
 
     //clear bullets
     while(bulletArr.length>0 && (bulletArr[0].used || bulletArr[0].y < 0)){
         bulletArr.shift();
     }
 
-    //next level
+    nextLevel();
+
+    statistics();
+}
+
+function nextLevel(){
     if(alienCount==0){
         alienColumns=Math.min(alienColumns+1, columns/2-2);
         alienRows=Math.min(alienRows+1,rows-4);
@@ -159,8 +135,6 @@ function update(){
         level++;
         createAliens();
     }
-
-    statistics();
 }
 
 function moveShip(e){
@@ -182,7 +156,7 @@ function createAliens(){
             let health= Math.floor(Math.random() * 4) + 1;
             let alien={
                 img: getAlienImage(health),
-                x:alienX+ c*alienWith,
+                x: alienX+ c*alienWith,
                 y: alienY + r*alienHeight,
                 width: alienWith,
                 height: alienHeight,
@@ -204,6 +178,49 @@ function getAlienImage(hp) {
         return alienImgWhite;
     } else {
         return alienImgMagenta;
+    }
+}
+
+function shooting(){
+    //player shoots
+    for(let i=0;i<bulletArr.length; i++){
+        let bullet=bulletArr[i];
+        bullet.y+=bulletVel;
+        context.fillStyle="white";
+        context.fillRect(bullet.x,bullet.y,bullet.width,bullet.height);
+
+        for(let k=0;k<alienArr.length;k++){
+            let alien=alienArr[k];
+            if (!bullet.used && alien.alive && detectCollision(bullet, alien)) {
+                bullet.used = true;
+                alien.hp--;
+                score+=20;
+                alien.img=getAlienImage(alien.hp);
+                if(alien.hp==0){
+                    alien.alive = false;
+                    alienCount--;
+                    score += 100;
+                }
+            }
+        }
+    }
+
+    //alien shoots
+    for (let i = 0; i < alienBulletArr.length; i++) {
+        let bullet = alienBulletArr[i];
+        bullet.y -= bulletVel/2;
+        context.fillStyle = "red";
+        context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+
+        // Detect collision with player's ship
+        if (detectCollision(bullet, ship)) {
+            ship.lives--;
+            alienBulletArr.splice(i, 1);
+            i--;
+            if(ship.lives==0){
+                gameOver=true;
+            }
+        }
     }
 }
 
@@ -258,11 +275,20 @@ function statistics(){
     context.fillStyle="#33ff00";
     context.fillText(score,125, 30);
 
-    //level
-    context.fillStyle="white";
-    context.font="28px PixelFont";
-    context.fillText("Level ",board.width-140,30);
+    // Draw level
+    context.fillStyle = "white";
+    context.font = "28px PixelFont";
+    context.fillText("Level ", 10, 60);
 
-    context.fillStyle="#33ff00";
-    context.fillText(level,board.width-40, 30);
+    context.fillStyle = "#33ff00";
+    context.fillText(level, 125, 60);
+
+    // Draw lives
+    context.fillStyle = "white";
+    context.font = "28px PixelFont";
+    context.fillText("Lives ", (board.width - 3*(ship.width)-50), 32);
+
+    for (let i = 0; i < ship.lives; i++) {
+        context.drawImage(shipImg, board.width - 140 + i * (ship.width / 2 + 10), 15, ship.width / 2, ship.height / 2);
+    }
 }
