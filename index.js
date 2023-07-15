@@ -38,6 +38,13 @@ alienImgYellow.src = "./Assets/alien-yellow.png";
 let alienImgWhite = new Image();
 alienImgWhite.src = "./Assets/alien-white.png";
 
+let alienDeathEffect=new Image();
+alienDeathEffect.src = "./Assets/alien_death.png";
+let alienDamageEffect=new Image();
+alienDamageEffect.src ="./Assets/alien_life_lost.png"
+let alien_bullet=new Image();
+alien_bullet.src="./Assets/alien_bullet.png";
+
 let alienRows=2;
 let alienColumns=3;
 let alienCount=3;
@@ -46,10 +53,18 @@ let alienVel=1;
 let bulletArr=[];
 let alienBulletArr=[];
 let bulletVel=-10;
+let alienShootSpeed=1000;
+
+let promptText="";
+let promptY = boardHeight / 1.5;
+let promptOpacity = 1;
+let showingPrompt = false;
 
 let score=0;
 let gameOver=false;
 let level=1;
+let shootingSpeed = 500; // milliseconds
+let shootingInterval = setInterval(autoShoot, shootingSpeed);
 
 window.onload=function(){
     board=document.getElementById("board");
@@ -119,6 +134,23 @@ function update(){
         bulletArr.shift();
     }
 
+    //draw prompt
+    if (showingPrompt) {
+        context.fillStyle = `rgba(155, 155, 255, ${promptOpacity})`;
+        context.font = "34px PixelFont";
+        let textWidth = context.measureText(promptText).width;
+        context.fillText(promptText,(board.width-textWidth)/2, promptY);
+
+        // Move the prompt up and reduce its opacity
+        promptY -= 2;
+        promptOpacity -= 0.008;
+
+        // Hide the prompt when its opacity reaches 0
+        if (promptOpacity <= 0) {
+            showingPrompt = false;
+        }
+    }
+
     nextLevel();
 
     statistics();
@@ -131,9 +163,32 @@ function nextLevel(){
         alienVel+=0.2;
         alienArr=[];
         bulletArr=[];
-        score+=500;
+        score+=2000;
         level++;
+        if (level-1 == 4) {
+            prompt("Auto Fire Unlocked");
+        }
+        if(level>4){
+            alienShootSpeed=Math.min(alienShootSpeed-150,200);
+            shootingSpeed *= 0.8;
+            clearInterval(shootingInterval);
+            shootingInterval = setInterval(autoShoot, shootingSpeed);
+        }
+        if((level-1)%3==0 && ship.lives<4){
+            ship.lives++;
+            prompt("+1 life")
+        }
         createAliens();
+    }
+}
+
+function prompt(text) {
+    // Only show the prompt if it is not currently being shown
+    if (!showingPrompt) {
+        showingPrompt = true;
+        promptText = text;
+        promptY = boardHeight / 1.5;
+        promptOpacity = 1;
     }
 }
 
@@ -153,11 +208,12 @@ function moveShip(e){
 function createAliens(){
     for(let c=0;c<alienColumns;c++){
         for(let r=0; r<alienRows;r++){
-            let health= Math.floor(Math.random() * 4) + 1;
+            let maxHp = Math.min(level, 4);
+            let health = Math.floor(Math.random() * maxHp) + 1;
             let alien={
                 img: getAlienImage(health),
                 x: alienX+ c*alienWith,
-                y: alienY + r*alienHeight,
+                y: alienY + r*(alienHeight+4),
                 width: alienWith,
                 height: alienHeight,
                 alive:true,
@@ -189,14 +245,20 @@ function shooting(){
         context.fillStyle="white";
         context.fillRect(bullet.x,bullet.y,bullet.width,bullet.height);
 
-        for(let k=0;k<alienArr.length;k++){
-            let alien=alienArr[k];
+        for (let k = 0; k < alienArr.length; k++) {
+            let alien = alienArr[k];
             if (!bullet.used && alien.alive && detectCollision(bullet, alien)) {
                 bullet.used = true;
                 alien.hp--;
-                score+=20;
-                alien.img=getAlienImage(alien.hp);
-                if(alien.hp==0){
+                score += 20;
+                alien.img = getAlienImage(alien.hp);
+    
+                // Show damage effect
+                if (alien.hp > 0) {
+                    showEffect(alienDamageEffect, alien.x, alien.y, alien.width, alien.height);
+                } else {
+                    // Show death effect
+                    showEffect(alienDeathEffect, alien.x, alien.y, alien.width, alien.height);
                     alien.alive = false;
                     alienCount--;
                     score += 100;
@@ -208,9 +270,8 @@ function shooting(){
     //alien shoots
     for (let i = 0; i < alienBulletArr.length; i++) {
         let bullet = alienBulletArr[i];
-        bullet.y -= bulletVel/2;
-        context.fillStyle = "red";
-        context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+        bullet.y -= bulletVel/6;
+        context.drawImage(bullet.img, bullet.x, bullet.y, bullet.width*2, bullet.height*2);
 
         // Detect collision with player's ship
         if (detectCollision(bullet, ship)) {
@@ -241,13 +302,29 @@ function shoot(e){
     }
 }
 
+function autoShoot() {
+    // Only shoot if the game is not over and the level is greater than 4
+    if (!gameOver && level > 4) {
+        let bullet = {
+            x: ship.x + shipWdith * 15 / 32,
+            y: ship.y,
+            width: tileSize / 8,
+            height: tileSize / 2,
+            used: false
+        };
+        bulletArr.push(bullet);
+    }
+}
+
 function shootAlienBullet() {
     // Choose a random alien to shoot from
     let shootingAliens = alienArr.filter(alien => alien.alive);
     if (shootingAliens.length === 0) return;
     let shootingAlien = shootingAliens[Math.floor(Math.random() * shootingAliens.length)];
 
+    // Create a new bullet using the alien_bullet image
     let bullet = {
+        img: alien_bullet,
         x: shootingAlien.x + shootingAlien.width / 2,
         y: shootingAlien.y + shootingAlien.height,
         width: tileSize / 6,
@@ -256,7 +333,7 @@ function shootAlienBullet() {
     };
     alienBulletArr.push(bullet);
 }
-setInterval(shootAlienBullet, Math.random() * 1000 + 1000);
+setInterval(shootAlienBullet, Math.random() * 1000 + alienShootSpeed);
 
 
 function detectCollision(a,b){
@@ -291,4 +368,11 @@ function statistics(){
     for (let i = 0; i < ship.lives; i++) {
         context.drawImage(shipImg, board.width - 140 + i * (ship.width / 2 + 10), 15, ship.width / 2, ship.height / 2);
     }
+}
+
+function showEffect(effectImg, x, y, width, height) {
+    context.drawImage(effectImg, x, y, width, height);
+    setTimeout(() => {
+        context.clearRect(x, y, width, height);
+    }, 100);
 }
