@@ -38,6 +38,9 @@ alienImgYellow.src = "./Assets/alien-yellow.png";
 let alienImgWhite = new Image();
 alienImgWhite.src = "./Assets/alien-white.png";
 
+let alien2Img=new Image();
+alien2Img.src = "./Assets/alien2.png"
+
 let alienDeathEffect=new Image();
 alienDeathEffect.src = "./Assets/alien_death.png";
 let alienDamageEffect=new Image();
@@ -229,35 +232,34 @@ function update(){
     }
 }
 
-function nextLevel(){
-    if(alienCount==0){
-        alienColumns=Math.min(alienColumns+1, columns/2-2);
-        alienRows=Math.min(alienRows+1,rows-4);
-        alienVel+=0.2;
-        alienArr=[];
-        bulletArr=[];
-        score+=2000;
-        level++;
-        if (level-1 == 4) {
-            prompt("Auto Fire Unlocked", 1,0.006);
+function nextLevel() {
+    if (alienCount == 0) {
+        if (level <= 10) {
+            alienColumns = Math.min(alienColumns + 1, columns / 2 - 2);
+            alienRows = Math.min(alienRows + 1, rows - 4);
         }
-        if(level>4){
-            alienShootSpeed=Math.min(alienShootSpeed-150,200);
+        alienVel += 0.2;
+        alienArr = [];
+        bulletArr = [];
+        score += 2000;
+        level++;
+        if (level - 1 == 4) {
+            prompt("Auto Fire Unlocked");
+        }
+        if (level > 4) {
+            alienShootSpeed = Math.min(alienShootSpeed - 150, 200);
             shootingSpeed *= 0.8;
             clearInterval(shootingInterval);
             shootingInterval = setInterval(autoShoot, shootingSpeed);
         }
-        if((level-1)%3==0 && ship.lives<3){
+        if ((level - 1) % 3 == 0 && ship.lives < 3) {
             ship.lives++;
-            prompt("+1 life",1.5 ,0.01 ,"155,255,155")
-        }
-        if(level-1==5){
-            prompt("Double Gun Unlocked", 1, 0.006, "255,255,0")
-            shootingSpeed=shootingSpeed/2;
+            prompt("+1 life", 1.5, 0.01, "155,255,155");
         }
         createAliens();
     }
 }
+
 
 function prompt(text, vel=2, time=0.01, color="135, 206, 235") {
     // Only show the prompt if it is not currently being shown
@@ -285,34 +287,51 @@ function moveShip(e){
     }
 }
 
-function createAliens(){
-    for(let c=0;c<alienColumns;c++){
-        for(let r=0; r<alienRows;r++){
+function createAliens() {
+    for (let c = 0; c < alienColumns; c++) {
+        for (let r = 0; r < alienRows; r++) {
             let maxHp = Math.min(level, 4);
             let health = Math.floor(Math.random() * maxHp) + 1;
-            let alien={
-                img: getAlienImage(health),
-                x: alienX+ c*alienWidth,
-                y: alienY + r*(alienHeight+4),
+            let alienType=1;
+            if (level >= 8 && r === 0) {
+                // Create new type of alien with 10 HP on topmost row
+                alienType=2;
+                health = 10;
+            } else if (level > 10 && r < level - 10) {
+                // Create more rows of new type of aliens with 10 HP
+                alienType=2;
+                health = 10;
+            }
+            let alien = {
+                img: getAlienImage(health, alienType),
+                x: alienX + c * alienWidth,
+                y: alienY + r * (alienHeight + 4),
                 width: alienWidth,
                 height: alienHeight,
-                alive:true,
-                hp: health
-            }
+                alive: true,
+                hp: health,
+                type:alienType
+            };
             alienArr.push(alien);
         }
     }
-    alienCount=alienArr.length;
+    alienCount = alienArr.length;
 }
 
-function getAlienImage(hp) {
-    if (hp == 3) {
+function getAlienImage(hp, type) {
+    if (type==2) {
+        return alien2Img;
+    } 
+    else if (hp == 3 && type==1) {
         return alienImgCyan;
-    } else if (hp == 2) {
+    } 
+    else if (hp == 2 && type==1) {
         return alienImgYellow;
-    } else if (hp == 1) {
+    } 
+    else if (hp == 1 && type==1) {
         return alienImgWhite;
-    } else {
+    } 
+    else {
         return alienImgMagenta;
     }
 }
@@ -331,7 +350,7 @@ function shooting(){
                 bullet.used = true;
                 alien.hp--;
                 score += 20;
-                alien.img = getAlienImage(alien.hp);
+                alien.img = getAlienImage(alien.hp,alien.type);
     
                 // Show damage effect
                 if (alien.hp > 0) {
