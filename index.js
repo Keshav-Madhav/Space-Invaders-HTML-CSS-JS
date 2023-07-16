@@ -29,14 +29,21 @@ let alienHeight=tileSize;
 let alienX=boardWidth/2-alienWidth*3/2;
 let alienY=tileSize*2;
 
-let alienImgMagenta = new Image();
-alienImgMagenta.src = "./Assets/alien-magenta.png";
-let alienImgCyan = new Image();
-alienImgCyan.src = "./Assets/alien-cyan.png";
-let alienImgYellow = new Image();
-alienImgYellow.src = "./Assets/alien-yellow.png";
-let alienImgWhite = new Image();
-alienImgWhite.src = "./Assets/alien-white.png";
+let alienImgMagenta = [new Image(),new Image];
+alienImgMagenta[0].src = "./Assets/alien-magenta.png";
+alienImgMagenta[1].src = "./Assets/alien-magenta.png";
+
+let alienImgCyan = [new Image(), new Image()];
+alienImgCyan[0].src = "./Assets/alien-cyan.png";
+alienImgCyan[1].src = "./Assets/alien-cyan.png";
+
+let alienImgYellow = [new Image(),new Image];
+alienImgYellow[0].src = "./Assets/alien-yellow.png";
+alienImgYellow[1].src = "./Assets/alien-yellow.png";
+
+let alienImgWhite = [new Image(),new Image];
+alienImgWhite[0].src = "./Assets/alien-white.png";
+alienImgWhite[1].src = "./Assets/alien-white.png";
 
 let alien2Img=new Image();
 alien2Img.src = "./Assets/alien2.png"
@@ -67,7 +74,7 @@ let alienVel=1;
 let bulletArr=[];
 let alienBulletArr=[];
 let bulletVel=-10;
-let alienShootSpeed=1000;
+let alienShootSpeed=500;
 
 let promptText="";
 let promptY = boardHeight / 1.5;
@@ -134,7 +141,7 @@ window.onload=function(){
 
     requestAnimationFrame(update);
     document.addEventListener("keydown", moveShip);
-    document.addEventListener("keydown", shoot);
+    document.addEventListener("keyup", shoot);
 }
 
 window.addEventListener("resize", function() {
@@ -244,10 +251,10 @@ function nextLevel() {
         score += 2000;
         level++;
         if (level - 1 == 4) {
-            prompt("Auto Fire Unlocked");
+            prompt("Auto Fire Unlocked", 1.5, 0.004);
         }
         if (level > 4) {
-            alienShootSpeed = Math.min(alienShootSpeed - 150, 200);
+            alienShootSpeed = Math.min(alienShootSpeed - 100, 20);
             shootingSpeed *= 0.8;
             clearInterval(shootingInterval);
             shootingInterval = setInterval(autoShoot, shootingSpeed);
@@ -255,6 +262,9 @@ function nextLevel() {
         if ((level - 1) % 3 == 0 && ship.lives < 3) {
             ship.lives++;
             prompt("+1 life", 1.5, 0.01, "155,255,155");
+        }
+        if(level==6){
+            prompt("Double Gun Unlocked", 1.5, 0.004, "255,255,0")
         }
         createAliens();
     }
@@ -304,7 +314,7 @@ function createAliens() {
             }
             let alien = {
                 img: getAlienImage(health, alienType),
-                x: alienX + c * alienWidth,
+                x: alienX + c * (alienWidth+4),
                 y: alienY + r * (alienHeight + 4),
                 width: alienWidth,
                 height: alienHeight,
@@ -319,20 +329,22 @@ function createAliens() {
 }
 
 function getAlienImage(hp, type) {
+    let imageVersion = Math.floor(Date.now() / 600) % 2 ;
+
     if (type==2) {
         return alien2Img;
     } 
     else if (hp == 3 && type==1) {
-        return alienImgCyan;
+        return alienImgCyan[imageVersion];
     } 
     else if (hp == 2 && type==1) {
-        return alienImgYellow;
+        return alienImgYellow[imageVersion];
     } 
     else if (hp == 1 && type==1) {
-        return alienImgWhite;
+        return alienImgWhite[imageVersion];
     } 
     else {
-        return alienImgMagenta;
+        return alienImgMagenta[imageVersion];
     }
 }
 
@@ -394,33 +406,10 @@ function shoot(e) {
 
     if (e.code == "Space") {
         if (level >= 6) {
-            // Add two bullets
-            let bullet1 = {
-                x: ship.x+15,
-                y: ship.y+5,
-                width: tileSize / 8,
-                height: tileSize / 2,
-                used: false
-            };
-            let bullet2 = {
-                x: ship.x + ship.width-15,
-                y: ship.y+5,
-                width: tileSize / 8,
-                height: tileSize / 2,
-                used: false
-            };
-            bulletArr.push(bullet1);
-            bulletArr.push(bullet2);
+            addBullet(ship.x+15,ship.y+5)
+            addBullet(ship.x + ship.width-15,ship.y+5)
         } else {
-            // Add one bullet
-            let bullet = {
-                x: ship.x + shipWdith * 15 / 32,
-                y: ship.y,
-                width: tileSize / 8,
-                height: tileSize / 2,
-                used: false
-            };
-            bulletArr.push(bullet);
+            addBullet()
         }
     }
 }
@@ -430,35 +419,23 @@ function autoShoot() {
     // Only shoot if the game is not over and the level is greater than 4
     if (!gameOver && level > 4) {
         if (level >= 6) {
-            // Add two bullets
-            let bullet1 = {
-                x: ship.x+15,
-                y: ship.y+5,
-                width: tileSize / 8,
-                height: tileSize / 2,
-                used: false
-            };
-            let bullet2 = {
-                x: ship.x + ship.width-15,
-                y: ship.y+5,
-                width: tileSize / 8,
-                height: tileSize / 2,
-                used: false
-            };
-            bulletArr.push(bullet1);
-            bulletArr.push(bullet2);
+            addBullet(ship.x+15,ship.y+5)
+            addBullet(ship.x + ship.width-15,ship.y+5)
         } else {
-            // Add one bullet
-            let bullet = {
-                x: ship.x + shipWdith * 15 / 32,
-                y: ship.y,
-                width: tileSize / 8,
-                height: tileSize / 2,
-                used: false
-            };
-            bulletArr.push(bullet);
+            addBullet()
         }
     }
+}
+
+function addBullet(x=ship.x + shipWdith * 15 / 32,y=ship.y){
+    let bullet = {
+        x: x,
+        y: y,
+        width: tileSize / 8,
+        height: tileSize / 2,
+        used: false
+    };
+    bulletArr.push(bullet)
 }
 
 function shootAlienBullet() {
@@ -542,3 +519,12 @@ function restartGame() {
     // Reset game over flag
     gameOver = false;
 }
+
+function animateAliens() {
+    for (let i = 0; i < alienArr.length; i++) {
+        let alien = alienArr[i];
+        alien.img = getAlienImage(alien.hp, alien.type);
+    }
+}
+
+setInterval(animateAliens, 600);
