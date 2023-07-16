@@ -303,7 +303,7 @@ function createAliens() {
             let maxHp = Math.min(level, 4);
             let health = Math.floor(Math.random() * maxHp) + 1;
             let alienType=1;
-            if (level >= 2 && r === 0) {
+            if (level >= 8 && r === 0) {
                 // Create new type of alien with 10 HP on topmost row
                 alienType=2;
                 health = 10;
