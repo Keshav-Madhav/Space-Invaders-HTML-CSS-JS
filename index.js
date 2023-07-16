@@ -31,19 +31,19 @@ let alienY=tileSize*2;
 
 let alienImgMagenta = [new Image(),new Image];
 alienImgMagenta[0].src = "./Assets/alien-magenta.png";
-alienImgMagenta[1].src = "./Assets/alien-magenta.png";
+alienImgMagenta[1].src = "./Assets/alien-magenta_2.png";
 
 let alienImgCyan = [new Image(), new Image()];
 alienImgCyan[0].src = "./Assets/alien-cyan.png";
-alienImgCyan[1].src = "./Assets/alien-cyan.png";
+alienImgCyan[1].src = "./Assets/alien-cyan_2.png";
 
 let alienImgYellow = [new Image(),new Image];
 alienImgYellow[0].src = "./Assets/alien-yellow.png";
-alienImgYellow[1].src = "./Assets/alien-yellow.png";
+alienImgYellow[1].src = "./Assets/alien-yellow_2.png";
 
 let alienImgWhite = [new Image(),new Image];
 alienImgWhite[0].src = "./Assets/alien-white.png";
-alienImgWhite[1].src = "./Assets/alien-white.png";
+alienImgWhite[1].src = "./Assets/alien-white_2.png";
 
 let alien2Img=new Image();
 alien2Img.src = "./Assets/alien2.png"
@@ -303,7 +303,7 @@ function createAliens() {
             let maxHp = Math.min(level, 4);
             let health = Math.floor(Math.random() * maxHp) + 1;
             let alienType=1;
-            if (level >= 8 && r === 0) {
+            if (level >= 2 && r === 0) {
                 // Create new type of alien with 10 HP on topmost row
                 alienType=2;
                 health = 10;
