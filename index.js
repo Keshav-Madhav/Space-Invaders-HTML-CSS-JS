@@ -69,7 +69,7 @@ let effects = [];
 let alienRows=2;
 let alienColumns=3;
 let alienCount=3;
-let alienVel=1;
+let alienVel=0.8;
 
 let bulletArr=[];
 let alienBulletArr=[];
@@ -141,7 +141,7 @@ window.onload=function(){
 
     requestAnimationFrame(update);
     document.addEventListener("keydown", moveShip);
-    document.addEventListener("keyup", shoot);
+    document.addEventListener("keydown", shoot);
 }
 
 window.addEventListener("resize", function() {
@@ -195,7 +195,7 @@ function update(){
                 if(alien.x+alien.width >= board.width || alien.x<=0){
                     alienVel*=-1;
                     alien.x+=alienVel*2;
-
+                    console.log(alienVel)
                     for(let k=0;k<alienArr.length;k++){
                         alienArr[k].y+=alienHeight;
                     }
@@ -241,11 +241,14 @@ function update(){
 
 function nextLevel() {
     if (alienCount == 0) {
-        if (level <= 10) {
-            alienColumns = Math.min(alienColumns + 1, columns / 2 - 2);
-            alienRows = Math.min(alienRows + 1, rows - 4);
+        alienColumns = Math.min(alienColumns + 1, columns/4);
+        alienRows = Math.min(alienRows + 1, rows /2-1);
+        if (alienVel>0){
+            alienVel=Math.min(alienVel+0.1, 1.7);
         }
-        alienVel += 0.2;
+        else{
+            alienVel=Math.max(alienVel-0.1, -1.7);
+        }
         alienArr = [];
         bulletArr = [];
         score += 2000;
