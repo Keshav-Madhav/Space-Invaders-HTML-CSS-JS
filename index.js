@@ -141,7 +141,7 @@ window.onload=function(){
 
     requestAnimationFrame(update);
     document.addEventListener("keydown", moveShip);
-    document.addEventListener("keydown", shoot);
+    document.addEventListener("keyup", shoot);
 }
 
 window.addEventListener("resize", function() {
