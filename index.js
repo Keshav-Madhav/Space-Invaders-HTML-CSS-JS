@@ -132,8 +132,6 @@ window.onload=function(){
     board.height= boardHeight;
     context=board.getContext("2d")
 
-    context.fillRect(ship.x,ship.y,ship.width,ship.height);
-
     //ship
     context.drawImage(shipImg, ship.x,ship.y,ship.width,ship.height);
 
